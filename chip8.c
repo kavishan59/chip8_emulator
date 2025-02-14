@@ -1,5 +1,7 @@
 #include "chip8.h"
+#include "graphic.h"
 #include <SDL2/SDL_stdinc.h>
+#include <SDL2/SDL_timer.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -21,6 +23,7 @@ void count(cpu *cpu)
     cpu->sound_counter--;
 }
 
+// open file (rom) and stock in our cpu memory
 int load_rom(cpu *cpu, const char path[])
 {
   FILE *rom = fopen(path, "rb");
@@ -34,3 +37,33 @@ int load_rom(cpu *cpu, const char path[])
   return 0;
 }
 
+int initialize_emulator (emulator *emulator)
+{
+  int status = -1;
+  initialize_cpu(&emulator->cpu);
+  memset(&emulator->input, 0, sizeof(input));
+  if (initialize_SDL() == 0)
+  {
+    status = initialize_screen(&emulator->screen);
+    if (status < 0)
+      destroy_SDL();
+  }
+  return status;
+}
+
+void destroy_emulator(emulator *emulator)
+{
+  destroy_screen(&emulator->screen);
+  destroy_SDL();
+}
+
+//our main loop 
+void emulate(emulator *emulator)
+{
+  while(!emulator->input.quit)
+  {
+    update_event(&emulator->input);
+    update_screen(&emulator->screen);
+    SDL_Delay(16);
+  }
+}

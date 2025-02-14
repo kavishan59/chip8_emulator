@@ -4,10 +4,13 @@
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_stdinc.h>
 #include <stdio.h>
+#include "graphic.h"
 
 #define MEMORY_SIZE 4096
 #define START_ADRESS 512
 
+
+//represent our cpu
 typedef struct s_scpu
 {
   Uint8   memory[MEMORY_SIZE];
@@ -20,9 +23,19 @@ typedef struct s_scpu
   Uint16   pc;
 } cpu;
 
+//represent our emulator
+typedef struct s_emulator
+{
+  cpu cpu;
+  screen screen;
+  input input;
+} emulator;
 
 void initialize_cpu(cpu *cpu);
 void count(cpu *cpu);
 int load_rom(cpu *cpu, const char path[]);
+int initialize_emulator (emulator *emulator);
+void destroy_emulator(emulator *emulator);
+void emulate(emulator *emulator);
 
 #endif // !CHIP8_H
