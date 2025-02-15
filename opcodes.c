@@ -2,6 +2,12 @@
 #include "graphic.h"
 #include <stddef.h>
 
+//Clear the display./
+void opcode_00E0(emulator *emulator, screen *screen, Uint8 b1, Uint8 b2, Uint8 b3)
+{
+  clear_screen(screen);
+}
+
 //The interpreter sets the program counter to the address at the top of the stack, then subtracts 1 from the stack pointer./
 void opcode_00EE(emulator *emulator, screen *screen, Uint8 b1, Uint8 b2, Uint8 b3)
 {
@@ -36,6 +42,58 @@ void opcode_3XNN(emulator *emulator, screen *screen, Uint8 b1, Uint8 b2, Uint8 b
 {
   if (emulator->cpu.V[b3] == (b2 << 4) + b1)
     emulator->cpu.pc += 2; 
+}
+
+//Skip next instruction if Vx != NN. 
+void opcode_4XNN(emulator *emulator, screen *screen, Uint8 b1, Uint8 b2, Uint8 b3)
+{
+
+  if (emulator->cpu.V[b3] != (b2 << 4) + b1)
+    emulator->cpu.pc += 2; 
+
+}
+
+//Skip next instruction if Vx = Vy.
+void opcode_5XY0(emulator *emulator, screen *screen, Uint8 b1, Uint8 b2, Uint8 b3)
+{
+  if (emulator->cpu.V[b3] == emulator->cpu.V[b2])
+    emulator->cpu.pc += 2;
+}
+
+//Set Vx = NN.
+void opcode_6XNN(emulator *emulator, screen *screen, Uint8 b1, Uint8 b2, Uint8 b3)
+{
+  emulator->cpu.V[b3] = (b2 << 4) + b1;
+}
+
+//Set Vx = Vx + NN./
+void opcode_7XNN(emulator *emulator, screen *screen, Uint8 b1, Uint8 b2, Uint8 b3)
+{
+  emulator->cpu.V[b3] += (b2 << 4) + b1;
+}
+
+//Set Vx = Vy.
+void opcode_8XY0(emulator *emulator, screen *screen, Uint8 b1, Uint8 b2, Uint8 b3)
+{
+  emulator->cpu.V[b3] = emulator->cpu.V[b2];
+}
+
+//Set Vx = Vx OR Vy.
+void opcode_8XY1(emulator *emulator, screen *screen, Uint8 b1, Uint8 b2, Uint8 b3)
+{
+  emulator->cpu.V[b3] = emulator->cpu.V[b3] | emulator->cpu.V[b2];
+}
+
+//Set Vx = Vx AND Vy.
+void opcode_8XY2(emulator *emulator, screen *screen, Uint8 b1, Uint8 b2, Uint8 b3)
+{
+  emulator->cpu.V[b3] = emulator->cpu.V[b3] & emulator->cpu.V[b2];
+}
+
+//Set Vx = Vx XOR Vy.
+void opcode_8XY3(emulator *emulator, screen *screen, Uint8 b1, Uint8 b2, Uint8 b3)
+{
+  emulator->cpu.V[b3] = emulator->cpu.V[b3] ^ emulator->cpu.V[b2];
 }
 
 //Draws a sprite at coordinate (VX, VY) that has a width of 8 pixels and a height of N pixels 
@@ -80,6 +138,10 @@ void interpret(emulator *emulator)
     case 0:
       printf("0NNN ");
       break;
+    case 1:
+      printf("00E0 ");
+      opcode_00E0(emulator, &emulator->screen, b1, b2, b3);
+      break;
     case 2:
       printf("00EE ");
       opcode_00EE(emulator, &emulator->screen, b1, b2, b3);
@@ -96,6 +158,38 @@ void interpret(emulator *emulator)
       printf("3XNN ");
       opcode_3XNN(emulator, &emulator->screen, b1, b2, b3);
       break;
+    case 6:
+      printf("4XNN ");
+      opcode_4XNN(emulator, &emulator->screen, b1, b2, b3);
+    case 7:
+      printf("5XY0 ");
+      opcode_5XY0(emulator, &emulator->screen, b1, b2, b3);
+      break;
+    case 8:
+      printf("6XNN ");
+      opcode_6XNN(emulator, &emulator->screen, b1, b2, b3);
+      break;
+    case 9:
+      printf("7XNN ");
+      opcode_7XNN(emulator, &emulator->screen, b1, b2, b3);
+      break;
+    case 10:
+      printf("8XY0 ");
+      opcode_8XY0(emulator, &emulator->screen, b1, b2, b3);
+      break;
+    case 11:
+      printf("8XY1 ");
+      opcode_8XY1(emulator, &emulator->screen, b1, b2, b3);
+      break;
+    case 12:
+      printf("8XY2 ");
+      opcode_8XY2(emulator, &emulator->screen, b1, b2, b3);
+      break;
+    case 13:
+      printf("8XY3 ");
+      opcode_8XY3(emulator, &emulator->screen, b1, b2, b3);
+      break;
+
     case 23:
       printf("DXYN ");
       opcode_DXYN(emulator, &emulator->screen, b1, b2, b3);
