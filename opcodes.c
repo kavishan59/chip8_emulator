@@ -2,6 +2,41 @@
 #include "graphic.h"
 #include <stddef.h>
 
+//The interpreter sets the program counter to the address at the top of the stack, then subtracts 1 from the stack pointer./
+void opcode_00EE(emulator *emulator, screen *screen, Uint8 b1, Uint8 b2, Uint8 b3)
+{
+  cpu *cpu = &emulator->cpu;
+  if (cpu->jump_nb > 0)
+  {
+    cpu->jump_nb--;
+    cpu->pc = cpu->jump[cpu->jump_nb];
+  }
+
+}
+
+//The interpreter sets the program counter to nnn.
+void opcode_1NNN(emulator *emulator, screen *screen, Uint8 b1, Uint8 b2, Uint8 b3)
+{
+  emulator->cpu.pc = (b3 << 8) + (b2 << 4) + b1 - 2;
+}
+
+//The interpreter increments the stack pointer, then puts the current PC on the top of the stack. The PC is then set to nnn.
+void opcode_2NNN(emulator *emulator, screen *screen, Uint8 b1, Uint8 b2, Uint8 b3)
+{
+  cpu *cpu =&emulator->cpu;
+  cpu->jump[cpu->jump_nb] = cpu->pc;
+  if (cpu->jump_nb < 15)
+    cpu->jump_nb++;
+
+  cpu->pc = (b3 << 8) + (b2 << 4) + b1 - 2;
+}
+
+//The interpreter compares register Vx to nn, and if they are equal, increments the program counter by 2.
+void opcode_3XNN(emulator *emulator, screen *screen, Uint8 b1, Uint8 b2, Uint8 b3)
+{
+  if (emulator->cpu.V[b3] == (b2 << 4) + b1)
+    emulator->cpu.pc += 2; 
+}
 
 //Draws a sprite at coordinate (VX, VY) that has a width of 8 pixels and a height of N pixels 
 void opcode_DXYN(emulator *emulator, screen *screen, Uint8 b1, Uint8 b2, Uint8 b3)
@@ -45,13 +80,29 @@ void interpret(emulator *emulator)
     case 0:
       printf("0NNN ");
       break;
+    case 2:
+      printf("00EE ");
+      opcode_00EE(emulator, &emulator->screen, b1, b2, b3);
+      break;
+    case 3:
+      printf("1NNN ");
+      opcode_1NNN(emulator,&emulator->screen, b1,b2,b3);
+      break;
+    case 4:
+      printf("2NNN ");
+      opcode_2NNN(emulator, &emulator->screen, b1, b2, b3);
+      break;
+    case 5:
+      printf("3XNN ");
+      opcode_3XNN(emulator, &emulator->screen, b1, b2, b3);
+      break;
     case 23:
       printf("DXYN ");
       opcode_DXYN(emulator, &emulator->screen, b1, b2, b3);
       break;
     default:
       printf("Unknown OPCODE ");
-
+      break;
   } 
   emulator->cpu.pc += 2;
 }
