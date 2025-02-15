@@ -1,5 +1,6 @@
 #include "chip8.h"
 #include "graphic.h"
+#include <SDL2/SDL_stdinc.h>
 #include <stddef.h>
 
 //Clear the display./
@@ -96,6 +97,73 @@ void opcode_8XY3(emulator *emulator, screen *screen, Uint8 b1, Uint8 b2, Uint8 b
   emulator->cpu.V[b3] = emulator->cpu.V[b3] ^ emulator->cpu.V[b2];
 }
 
+//Set Vx = Vx + Vy, set VF = carry.
+void opcode_8XY4(emulator *emulator, screen *screen, Uint8 b1, Uint8 b2, Uint8 b3)
+{
+  emulator->cpu.V[0xF] = emulator->cpu.V[b2] > 0xFF - emulator->cpu.V[b3];
+  emulator->cpu.V[b3] += emulator->cpu.V[b2];
+}
+
+//Set Vx = Vx - Vy, set VF = NOT borrow.
+void opcode_8XY5(emulator *emulator, screen *screen, Uint8 b1, Uint8 b2, Uint8 b3)
+{
+  emulator->cpu.V[0xF] = emulator->cpu.V[b2] <= emulator->cpu.V[b3];
+  emulator->cpu.V[b3] = emulator->cpu.V[b3] - emulator->cpu.V[b2]; 
+}
+
+//Set Vx = Vx SHR 1. if lsb of Vx equal to 1 then VF is set to 1;
+void opcode_8XY6(emulator *emulator, screen *screen, Uint8 b1, Uint8 b2, Uint8 b3)
+{
+  if ((b3 & 0b00000001) == 0b00000001)
+    emulator->cpu.V[0xF] = 1;
+  else
+    emulator->cpu.V[0xF] = 0;
+  emulator->cpu.V[b3] = emulator->cpu.V[b3] >> 1;
+}
+
+//Set Vx = Vy - Vx, set VF = NOT borrow.
+void opcode_8XY7(emulator *emulator, screen *screen, Uint8 b1, Uint8 b2, Uint8 b3)
+{
+  emulator->cpu.V[0xF] = emulator->cpu.V[b3] <= emulator->cpu.V[b2];
+  emulator->cpu.V[b3] = emulator->cpu.V[b2] - emulator->cpu.V[b3]; 
+}
+
+//Set Vx = Vx SHL 1. if msb of Vx equal to 1 then VF is set to 1;
+void opcode_8XYE(emulator *emulator, screen *screen, Uint8 b1, Uint8 b2, Uint8 b3)
+{
+  if ((b3 & 0b10000000) == 0b10000000)
+    emulator->cpu.V[0xF] = 1;
+  else
+    emulator->cpu.V[0xF] = 0;
+  emulator->cpu.V[b3] = emulator->cpu.V[b3] << 1;
+}
+
+//Skip next instruction if Vx != Vy.
+void opcode_9XY0(emulator *emulator, screen *screen, Uint8 b1, Uint8 b2, Uint8 b3)
+{
+  if (emulator->cpu.V[b3] != emulator->cpu.V[b2])
+    emulator->cpu.pc += 2;
+}
+
+//Set I = nnn.
+void opcode_ANNN(emulator *emulator, screen *screen, Uint8 b1, Uint8 b2, Uint8 b3)
+{
+  emulator->cpu.I = (b3 << 8) + (b2 << 4) + b1;
+}
+
+//Jump to location nnn + V0.
+void opcode_BNNN(emulator *emulator, screen *screen, Uint8 b1, Uint8 b2, Uint8 b3)
+{
+  emulator->cpu.pc = (b3 << 8) + (b2 << 4) + b1 + emulator->cpu.V[0] - 2;
+}
+
+//Set Vx = random byte AND NN.
+void opcode_CXNN(emulator *emulator, screen *screen, Uint8 b1, Uint8 b2, Uint8 b3)
+{
+  Uint8 random_value = rand() % 256;
+  emulator->cpu.V[b3] = random_value & ((b2 << 4) + b1);
+}
+
 //Draws a sprite at coordinate (VX, VY) that has a width of 8 pixels and a height of N pixels 
 void opcode_DXYN(emulator *emulator, screen *screen, Uint8 b1, Uint8 b2, Uint8 b3)
 {
@@ -122,6 +190,23 @@ void opcode_DXYN(emulator *emulator, screen *screen, Uint8 b1, Uint8 b2, Uint8 b
   }
 
 }
+
+//Set I = location of sprite(font) for digit Vx. we stored from memory 0 to 80. Each font take 5 bytes
+void opcode_FX29(emulator *emulator, screen *screen, Uint8 b1, Uint8 b2, Uint8 b3)
+{
+  emulator->cpu.I = 5 * emulator->cpu.V[b3];
+}
+
+//Store BCD representation of Vx in memory locations I, I+1, and I+2.
+void opcode_FX33(emulator *emulator, screen *screen, Uint8 b1, Uint8 b2, Uint8 b3)
+{
+  Uint8 nb = emulator->cpu.V[b3];
+  emulator->cpu.memory[emulator->cpu.I + 2] = nb % 10;
+  emulator->cpu.memory[emulator->cpu.I + 1] = (nb/10) % 10;
+  emulator->cpu.memory[emulator->cpu.I] = nb/100;
+}
+
+
 
 //interpret opcodes
 void interpret(emulator *emulator)
@@ -189,10 +274,53 @@ void interpret(emulator *emulator)
       printf("8XY3 ");
       opcode_8XY3(emulator, &emulator->screen, b1, b2, b3);
       break;
-
+    case 14:
+      printf("8XY4 ");
+      opcode_8XY4(emulator, &emulator->screen, b1, b2, b3);
+      break;
+    case 15:
+      printf("8XY5 ");
+      opcode_8XY5(emulator, &emulator->screen, b1, b2, b3);
+      break;
+    case 16:
+      printf("8XY6 ");
+      opcode_8XY6(emulator, &emulator->screen, b1, b2, b3);
+      break;
+    case 17:
+      printf("8XY7 ");
+      opcode_8XY7(emulator, &emulator->screen, b1, b2, b3);
+      break;
+    case 18:
+      printf("8XYE ");
+      opcode_8XYE(emulator, &emulator->screen, b1, b2, b3);
+      break;
+    case 19:
+      printf("9XY0 ");
+      opcode_9XY0(emulator, &emulator->screen, b1, b2, b3);
+      break;
+    case 20:
+      printf("ANNN ");
+      opcode_ANNN(emulator, &emulator->screen, b1, b2, b3);
+      break;
+    case 21:
+      printf("BNNN ");
+      opcode_BNNN(emulator, &emulator->screen, b1, b2, b3);
+      break;
+    case 22:
+      printf("CXNN ");
+      opcode_CXNN(emulator, &emulator->screen, b1, b2, b3);
+      break;
     case 23:
       printf("DXYN ");
       opcode_DXYN(emulator, &emulator->screen, b1, b2, b3);
+      break;
+    case 31:
+      printf("FX29 ");
+      opcode_FX29(emulator, &emulator->screen, b1, b2, b3);
+      break;
+    case 32:
+      printf("FX33 ");
+      opcode_FX33(emulator, &emulator->screen, b1, b2, b3);
       break;
     default:
       printf("Unknown OPCODE ");

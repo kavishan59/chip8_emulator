@@ -92,6 +92,10 @@ void emulate(emulator *emulator)
     
 
     update_screen(&emulator->screen);
+    if (emulator->cpu.sys_counter > 0)
+      emulator->cpu.sys_counter--;
+    if (emulator->cpu.sound_counter > 0)
+      emulator->cpu.sound_counter--;
     SDL_Delay(16);
   }
 }
