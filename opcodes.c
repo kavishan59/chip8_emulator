@@ -180,7 +180,6 @@ void opcode_CXNN(emulator *emulator, screen *screen, Uint8 b1, Uint8 b2, Uint8 b
 void opcode_DXYN(emulator *emulator, screen *screen, Uint8 b1, Uint8 b2, Uint8 b3)
 {
   cpu *cpu = &emulator->cpu;
-  cpu->V[0xF] = 0;
 
   for(size_t i = 0; i < b1; i++)
   {
@@ -192,7 +191,9 @@ void opcode_DXYN(emulator *emulator, screen *screen, Uint8 b1, Uint8 b2, Uint8 b
       if (y < PIXEL_BY_HEIGHT && x < PIXEL_BY_WIDTH && (sprite_byte << j) & 0b10000000) // get the MSB if j = 0 and so on
       { 
         if(screen->pixels[x][y] == WHITE)
-          cpu->V[0xF] = 1;  //collision detected !
+          cpu->V[0xF] = 1;//collision detected !
+        else
+          cpu->V[0xF] = 0;
         screen->pixels[x][y] = !screen->pixels[x][y]; //toggle the pixel
       }
     }
@@ -200,10 +201,50 @@ void opcode_DXYN(emulator *emulator, screen *screen, Uint8 b1, Uint8 b2, Uint8 b
 
 }
 
+//Skip next instruction if key with the value of Vx is pressed.
+void opcode_EX9E(emulator *emulator, screen *screen, Uint8 b1, Uint8 b2, Uint8 b3)
+{
+  if(emulator->cpu.key[emulator->cpu.V[b3]])
+    emulator->cpu.pc += 2;
+}
+
+//Skip next instruction if key with the value of Vx is not pressed.
+void opcode_EXA1(emulator *emulator, screen *screen, Uint8 b1, Uint8 b2, Uint8 b3)
+{
+  if(!emulator->cpu.key[emulator->cpu.V[b3]])
+    emulator->cpu.pc += 2;
+}
+
 //Set Vx = delay timer value.
 void opcode_FX07(emulator *emulator, screen *screen, Uint8 b1, Uint8 b2, Uint8 b3)
 {
   emulator->cpu.V[b3] = emulator->cpu.sys_counter; 
+}
+
+//Wait for a key press, store the value of the key in Vx.
+void opcode_FX0A(emulator *emulator, screen *screen, Uint8 b1, Uint8 b2, Uint8 b3)
+{
+    static SDL_bool pressed_key[16] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+  
+    for (int i = 0; i < 16; i++) 
+    {
+        if (emulator->cpu.key[i]) // If key is pressed
+        {
+            pressed_key[i] = SDL_TRUE;
+        }
+    }
+    for(int i = 0; i < 16; i++)
+    {
+      if (pressed_key[i] == SDL_TRUE && !emulator->cpu.key[i])
+      {
+            emulator->cpu.V[b3] = i;// Store the key value in VX
+            memset(pressed_key, 0,sizeof(pressed_key)); //reset the static array
+            return;                  // Continue execution
+      }
+    }
+
+    // If no key is pressed, repeat opcode (pause execution)
+    emulator->cpu.pc -= 2;
 }
 
 //Set delay timer = Vx.
@@ -364,9 +405,21 @@ void interpret(emulator *emulator)
       printf("DXYN(%X) ",opcode);
       opcode_DXYN(emulator, &emulator->screen, b1, b2, b3);
       break;
+    case 24:
+      printf("EX9E(%X) ",opcode);
+      opcode_EX9E(emulator, &emulator->screen, b1, b2, b3);
+      break;
+    case 25:
+      printf("EXA1(%X) ",opcode);
+      opcode_EXA1(emulator, &emulator->screen, b1, b2, b3);
+      break;
     case 26:
       printf("FX07(%X) ",opcode);
       opcode_FX07(emulator, &emulator->screen, b1, b2, b3);
+      break;
+    case 27:
+      printf("FX0A(%X) ",opcode);
+      opcode_FX0A(emulator, &emulator->screen, b1, b2, b3);
       break;
     case 28:
       printf("FX15(%X) ",opcode);

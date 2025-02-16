@@ -30,6 +30,7 @@ typedef struct s_scpu
   Uint8   sound_counter;
   Uint16   pc;
   struct s_jump table;
+  SDL_bool key[16]; // chip8 keyboard
 } cpu;
 
 //represent our emulator
@@ -37,7 +38,8 @@ typedef struct s_emulator
 {
   cpu cpu;
   screen screen;
-  input input;
+  input input; //to manage sdl events
+  int key_table[16]; // contains key_table[chip8_keyboard] = our_keyboard_value
 } emulator;
 
 
@@ -52,6 +54,7 @@ Uint8 get_action(struct s_jump *table, Uint16 opcode);
 void initiliaze_jump_table(struct s_jump *table);
 
 void interpret(emulator *emulator);
+void manage_input(emulator *emulator);
 
 //OPCODES
 

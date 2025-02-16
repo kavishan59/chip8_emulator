@@ -60,11 +60,33 @@ int load_rom(cpu *cpu, const char path[])
   return 0;
 }
 
+//our chip8 keyboard(index) <=> our pc keyboard table(value)
+void initialize_key_table(int *table)
+{
+     table[0] = SDL_SCANCODE_KP_0;
+    table[1] = SDL_SCANCODE_KP_7;
+    table[2] = SDL_SCANCODE_KP_8;
+    table[3] = SDL_SCANCODE_KP_9;
+    table[4] = SDL_SCANCODE_KP_4;
+    table[5] = SDL_SCANCODE_KP_5;
+    table[6] = SDL_SCANCODE_KP_6;
+    table[7] = SDL_SCANCODE_KP_1;
+    table[8] = SDL_SCANCODE_KP_2;
+    table[9] = SDL_SCANCODE_KP_3;
+    table[10] = SDL_SCANCODE_RIGHT;
+    table[11] = SDL_SCANCODE_KP_PERIOD;
+    table[12] = SDL_SCANCODE_KP_MULTIPLY;
+    table[13] = SDL_SCANCODE_KP_MINUS;
+    table[14] = SDL_SCANCODE_KP_PLUS;
+    table[15] = SDL_SCANCODE_KP_ENTER;
+}
+
 int initialize_emulator (emulator *emulator)
 {
   int status = -1;
   initialize_cpu(&emulator->cpu);
   memset(&emulator->input, 0, sizeof(input));
+  initialize_key_table(emulator->key_table);
   if (initialize_SDL() == 0)
   {
     status = initialize_screen(&emulator->screen);
@@ -87,10 +109,15 @@ void emulate(emulator *emulator)
   while(!emulator->input.quit)
   {
     update_event(&emulator->input);
+    manage_input(emulator);
     if(emulator->input.resize)
       resize_screen(&emulator->screen);
    
-    //we are executing instruction at 240 hz , so 4 instruction every 16ms.
+    //we are executing instruction at 500 hz , so 8 instruction every 16ms.
+    interpret(emulator);
+    interpret(emulator);
+    interpret(emulator);
+    interpret(emulator);
     interpret(emulator);
     interpret(emulator);
     interpret(emulator);
@@ -156,4 +183,15 @@ void initiliaze_jump_table(struct s_jump *table)
     table->mask[32]= 0xF0FF; table->id[32]=0xF033;          /* FX33 */
     table->mask[33]= 0xF0FF; table->id[33]=0xF055;          /* FX55 */
     table->mask[34]= 0xF0FF; table->id[34]=0xF065;          /* FX65 */
+}
+
+//add whick chip8 key was pressed or not via sdl event(sdl_keydown/sld_keyup) & key_table
+void manage_input(emulator *emulator)
+{
+  cpu *cpu = &emulator->cpu;
+  input *input = &emulator->input;
+  for(size_t i = 0; i < 16; i++)
+  {
+    cpu->key[i] = input->key[emulator->key_table[i]];
+  }
 }

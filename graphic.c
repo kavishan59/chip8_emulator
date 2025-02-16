@@ -1,10 +1,12 @@
 #include "graphic.h"
+#include "chip8.h"
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_error.h>
 #include <SDL2/SDL_events.h>
 #include <SDL2/SDL_render.h>
 #include <SDL2/SDL_stdinc.h>
 #include <SDL2/SDL_video.h>
+#include <stddef.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -100,9 +102,9 @@ void update_event(input *input)
     if (event.type == SDL_QUIT)
       input->quit = SDL_TRUE;
     else if(event.type == SDL_KEYDOWN)
-        input->key[event.key.keysym.sym] = SDL_TRUE;
+        input->key[event.key.keysym.scancode] = SDL_TRUE;
     else if(event.type == SDL_KEYUP)
-        input->key[event.key.keysym.sym] = SDL_FALSE;
+        input->key[event.key.keysym.scancode] = SDL_FALSE;
     else if(event.type == SDL_MOUSEMOTION)
     {
       input->x = event.motion.x;
@@ -124,3 +126,4 @@ void update_event(input *input)
           input->resize = SDL_TRUE;
   }
 }
+
