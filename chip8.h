@@ -40,6 +40,8 @@ typedef struct s_emulator
   screen screen;
   input input; //to manage sdl events
   int key_table[16]; // contains key_table[chip8_keyboard] = our_keyboard_value
+  SDL_bool shift_mode;
+  SDL_bool load_mode;
 } emulator;
 
 

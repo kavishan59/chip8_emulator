@@ -83,18 +83,21 @@ void opcode_8XY0(emulator *emulator, screen *screen, Uint8 b1, Uint8 b2, Uint8 b
 void opcode_8XY1(emulator *emulator, screen *screen, Uint8 b1, Uint8 b2, Uint8 b3)
 {
   emulator->cpu.V[b3] = emulator->cpu.V[b3] | emulator->cpu.V[b2];
+  emulator->cpu.V[0xF] = 0; // vF reset quirks
 }
 
 //Set Vx = Vx AND Vy.
 void opcode_8XY2(emulator *emulator, screen *screen, Uint8 b1, Uint8 b2, Uint8 b3)
 {
   emulator->cpu.V[b3] = emulator->cpu.V[b3] & emulator->cpu.V[b2];
+  emulator->cpu.V[0xF] = 0; // vF reset quirks
 }
 
 //Set Vx = Vx XOR Vy.
 void opcode_8XY3(emulator *emulator, screen *screen, Uint8 b1, Uint8 b2, Uint8 b3)
 {
   emulator->cpu.V[b3] = emulator->cpu.V[b3] ^ emulator->cpu.V[b2];
+  emulator->cpu.V[0xF] = 0; // vF reset quirks
 }
 
 //Set Vx = Vx + Vy, set VF = carry.
@@ -124,6 +127,8 @@ void opcode_8XY5(emulator *emulator, screen *screen, Uint8 b1, Uint8 b2, Uint8 b
 //Set Vx = Vx SHR 1. if lsb of Vx equal to 1 then VF is set to 1;
 void opcode_8XY6(emulator *emulator, screen *screen, Uint8 b1, Uint8 b2, Uint8 b3)
 {
+  if (emulator->shift_mode == 1)
+    emulator->cpu.V[b3] = emulator->cpu.V[b2];//shifting quirks
   int tb3 = emulator->cpu.V[b3];
   emulator->cpu.V[b3] = emulator->cpu.V[b3] >> 1;
   if ((tb3 & 0b00000001) == 0b00000001)
@@ -142,6 +147,8 @@ void opcode_8XY7(emulator *emulator, screen *screen, Uint8 b1, Uint8 b2, Uint8 b
 //Set Vx = Vx SHL 1. if msb of Vx equal to 1 then VF is set to 1;
 void opcode_8XYE(emulator *emulator, screen *screen, Uint8 b1, Uint8 b2, Uint8 b3)
 {
+  if (emulator->shift_mode == 1)
+    emulator->cpu.V[b3] = emulator->cpu.V[b2];//shifting quirks
   int tb3 = emulator->cpu.V[b3];
   emulator->cpu.V[b3] = emulator->cpu.V[b3] << 1;
   if ((tb3 & 0b10000000) == 0b10000000)
@@ -288,6 +295,8 @@ void opcode_FX55(emulator *emulator, screen *screen, Uint8 b1, Uint8 b2, Uint8 b
   {
     emulator->cpu.memory[emulator->cpu.I + i] = emulator->cpu.V[i];
   }
+  if (emulator->load_mode == 1)
+    emulator->cpu.I += 1; //memory quirks
 }
 
 //Read registers V0 through Vx from memory starting at location I.
@@ -297,6 +306,8 @@ void opcode_FX65(emulator *emulator, screen *screen, Uint8 b1, Uint8 b2, Uint8 b
   {
     emulator->cpu.V[i] =emulator->cpu.memory[emulator->cpu.I + i];  
   }
+  if (emulator->load_mode == 1)
+    emulator->cpu.I += 1; //memory quirks
 }
 //interpret opcodes
 void interpret(emulator *emulator)
