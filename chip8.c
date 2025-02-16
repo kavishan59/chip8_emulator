@@ -1,5 +1,6 @@
 #include "chip8.h"
 #include "graphic.h"
+#include <SDL2/SDL_mixer.h>
 #include <SDL2/SDL_stdinc.h>
 #include <SDL2/SDL_timer.h>
 #include <stddef.h>
@@ -43,7 +44,11 @@ void count(cpu *cpu)
   if (cpu->sys_counter > 0)
     cpu->sys_counter--;
   if (cpu->sound_counter > 0)
+  {
+    if(!Mix_Playing(-1))
+      Mix_PlayChannel(-1, beep_sound, 0);
     cpu->sound_counter--;
+  }
 }
 
 // open file (rom) and store in our cpu memory
@@ -90,6 +95,7 @@ int initialize_emulator (emulator *emulator)
   if (initialize_SDL() == 0)
   {
     status = initialize_screen(&emulator->screen);
+    status = initialize_sound();
     if (status < 0)
       destroy_SDL();
   }

@@ -1,14 +1,6 @@
 #include "graphic.h"
-#include "chip8.h"
-#include <SDL2/SDL.h>
-#include <SDL2/SDL_error.h>
-#include <SDL2/SDL_events.h>
-#include <SDL2/SDL_render.h>
-#include <SDL2/SDL_stdinc.h>
-#include <SDL2/SDL_video.h>
-#include <stddef.h>
-#include <stdio.h>
-#include <string.h>
+
+Mix_Chunk *beep_sound = NULL;
 
 int initialize_SDL(void)
 {
@@ -17,11 +9,31 @@ int initialize_SDL(void)
     fprintf(stderr, "Error SDL_init: %s.\n", SDL_GetError());
     return -1;
   }
+
+  if (Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048) < 0)
+  {
+    fprintf(stderr, "SDL_mixer Error: %s\n", Mix_GetError());
+    return -1;
+  }
+
+  return 0;
+}
+
+int initialize_sound(void)
+{
+  beep_sound = Mix_LoadWAV("beep.mp3");
+  if(!beep_sound)
+  {
+    fprintf(stderr, "Failed to load beep.mp3: %s\n", Mix_GetError());
+    return -1;
+  }
   return 0;
 }
 
 void destroy_SDL(void)
 {
+  Mix_FreeChunk(beep_sound);
+  Mix_CloseAudio();
   SDL_Quit();
 }
 

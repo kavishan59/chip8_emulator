@@ -8,6 +8,14 @@
 #include <SDL2/SDL_video.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <SDL2/SDL_mixer.h>
+#include <SDL2/SDL.h>
+#include <SDL2/SDL_error.h>
+#include <SDL2/SDL_events.h>
+#include <SDL2/SDL_render.h>
+#include <stddef.h>
+#include <string.h>
+
 
 #define BLACK SDL_FALSE
 #define WHITE SDL_TRUE
@@ -23,8 +31,9 @@
 #define SDL_BUTTON_X1       4
 #define SDL_BUTTON_X2       5
 
-
+extern Mix_Chunk *beep_sound;
 typedef SDL_bool s_pixel;
+
 
 //represent our screen
 typedef struct s_screen
@@ -56,6 +65,7 @@ void destroy_screen(screen *screen);
 void update_screen(screen *screen);
 void resize_screen(screen *screen);
 void update_event(input *input);
+int initialize_sound(void);
 #endif
 
 
