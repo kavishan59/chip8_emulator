@@ -30,7 +30,7 @@ unsigned char chip8_fontset[80] = {
 void initialize_cpu(cpu *cpu)
 {
   memset(cpu, 0, sizeof(*cpu));
-  cpu->pc = (Uint8)START_ADRESS;
+  cpu->pc = START_ADRESS;
   for(int i = 0; i < 80 ; i++)
     cpu->memory[i] = chip8_fontset[i];
   initiliaze_jump_table(&cpu->table);
@@ -46,7 +46,7 @@ void count(cpu *cpu)
     cpu->sound_counter--;
 }
 
-// open file (rom) and stock in our cpu memory
+// open file (rom) and store in our cpu memory
 int load_rom(cpu *cpu, const char path[])
 {
   FILE *rom = fopen(path, "rb");
@@ -89,14 +89,16 @@ void emulate(emulator *emulator)
     update_event(&emulator->input);
     if(emulator->input.resize)
       resize_screen(&emulator->screen);
-    
+   
+    //we are executing instruction at 240 hz , so 4 instruction every 16ms.
+    interpret(emulator);
+    interpret(emulator);
+    interpret(emulator);
+    interpret(emulator);
 
     update_screen(&emulator->screen);
-    if (emulator->cpu.sys_counter > 0)
-      emulator->cpu.sys_counter--;
-    if (emulator->cpu.sound_counter > 0)
-      emulator->cpu.sound_counter--;
-    SDL_Delay(16);
+    count(&emulator->cpu);
+    SDL_Delay(16); // 60 fps
   }
 }
 

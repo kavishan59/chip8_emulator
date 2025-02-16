@@ -25,7 +25,7 @@ typedef struct s_scpu
   Uint8   V[16];
   Uint16  I;
   Uint16  jump[16]; //stack
-  Uint8   jump_nb; //stack counter
+  Uint8   jump_nb; //stack top
   Uint8   sys_counter;
   Uint8   sound_counter;
   Uint16   pc;

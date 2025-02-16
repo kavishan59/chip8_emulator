@@ -169,18 +169,15 @@ void opcode_DXYN(emulator *emulator, screen *screen, Uint8 b1, Uint8 b2, Uint8 b
 {
   cpu *cpu = &emulator->cpu;
   cpu->V[0xF] = 0;
-  if (cpu->I + b1 >= MEMORY_SIZE)
-    return;
 
   for(size_t i = 0; i < b1; i++)
   {
     Uint8 sprite_byte = cpu->memory[cpu->I + i]; //sprite row of 8 bits
-    Uint8 y = (cpu->V[b2] + i) % PIXEL_BY_HEIGHT;  //wrap Y coordinates (if out of bond , reappear a the opposite side!)
+    Uint8 y = (cpu->V[b2]) + i;
     for(size_t j =0; j < 8; j++)
     {
-      Uint8 x = (cpu->V[b3] + j) % PIXEL_BY_WIDTH; //same as Y coordinate
-
-      if ((sprite_byte << j) & 0b10000000) // get the MSB if j = 0 and so on
+      Uint8 x = (cpu->V[b3]) + j; 
+      if (y < PIXEL_BY_HEIGHT && x < PIXEL_BY_WIDTH && (sprite_byte << j) & 0b10000000) // get the MSB if j = 0 and so on
       { 
         if(screen->pixels[x][y] == WHITE)
           cpu->V[0xF] = 1;  //collision detected !
@@ -189,6 +186,30 @@ void opcode_DXYN(emulator *emulator, screen *screen, Uint8 b1, Uint8 b2, Uint8 b
     }
   }
 
+}
+
+//Set Vx = delay timer value.
+void opcode_FX07(emulator *emulator, screen *screen, Uint8 b1, Uint8 b2, Uint8 b3)
+{
+  emulator->cpu.V[b3] = emulator->cpu.sys_counter; 
+}
+
+//Set delay timer = Vx.
+void opcode_FX15(emulator *emulator, screen *screen, Uint8 b1, Uint8 b2, Uint8 b3)
+{
+  emulator->cpu.sys_counter = emulator->cpu.V[b3]; 
+}
+
+//Set sound timer = Vx.
+void opcode_FX18(emulator *emulator, screen *screen, Uint8 b1, Uint8 b2, Uint8 b3)
+{
+  emulator->cpu.sound_counter = emulator->cpu.V[b3]; 
+}
+
+//Set I = I + Vx.
+void opcode_FX1E(emulator *emulator, screen *screen, Uint8 b1, Uint8 b2, Uint8 b3)
+{
+  emulator->cpu.I += emulator->cpu.V[b3]; 
 }
 
 //Set I = location of sprite(font) for digit Vx. we stored from memory 0 to 80. Each font take 5 bytes
@@ -200,14 +221,30 @@ void opcode_FX29(emulator *emulator, screen *screen, Uint8 b1, Uint8 b2, Uint8 b
 //Store BCD representation of Vx in memory locations I, I+1, and I+2.
 void opcode_FX33(emulator *emulator, screen *screen, Uint8 b1, Uint8 b2, Uint8 b3)
 {
-  Uint8 nb = emulator->cpu.V[b3];
-  emulator->cpu.memory[emulator->cpu.I + 2] = nb % 10;
-  emulator->cpu.memory[emulator->cpu.I + 1] = (nb/10) % 10;
-  emulator->cpu.memory[emulator->cpu.I] = nb/100;
+  cpu *cpu = &emulator->cpu;
+  Uint8 nb = cpu->V[b3];
+  emulator->cpu.memory[cpu->I + 2] = nb % 10;
+  emulator->cpu.memory[cpu->I + 1] = (nb/10) % 10;
+  emulator->cpu.memory[cpu->I] = nb/100;
 }
 
+//Store registers V0 through Vx in memory starting at location I.
+void opcode_FX55(emulator *emulator, screen *screen, Uint8 b1, Uint8 b2, Uint8 b3)
+{
+  for(int i = 0; i <= b3 ; i++)
+  {
+    emulator->cpu.memory[emulator->cpu.I + i] = emulator->cpu.V[i];
+  }
+}
 
-
+//Read registers V0 through Vx from memory starting at location I.
+void opcode_FX65(emulator *emulator, screen *screen, Uint8 b1, Uint8 b2, Uint8 b3)
+{
+  for(int i = 0; i <= b3 ; i++)
+  {
+    emulator->cpu.V[i] =emulator->cpu.memory[emulator->cpu.I + i];  
+  }
+}
 //interpret opcodes
 void interpret(emulator *emulator)
 {
@@ -314,6 +351,22 @@ void interpret(emulator *emulator)
       printf("DXYN ");
       opcode_DXYN(emulator, &emulator->screen, b1, b2, b3);
       break;
+    case 26:
+      printf("FX07 ");
+      opcode_FX07(emulator, &emulator->screen, b1, b2, b3);
+      break;
+    case 28:
+      printf("FX15 ");
+      opcode_FX15(emulator, &emulator->screen, b1, b2, b3);
+      break;
+    case 29:
+      printf("FX18 ");
+      opcode_FX18(emulator, &emulator->screen, b1, b2, b3);
+      break;
+    case 30:
+      printf("FX1E ");
+      opcode_FX1E(emulator, &emulator->screen, b1, b2, b3);
+      break;
     case 31:
       printf("FX29 ");
       opcode_FX29(emulator, &emulator->screen, b1, b2, b3);
@@ -321,6 +374,14 @@ void interpret(emulator *emulator)
     case 32:
       printf("FX33 ");
       opcode_FX33(emulator, &emulator->screen, b1, b2, b3);
+      break;
+    case 33:
+      printf("FX55 ");
+      opcode_FX55(emulator, &emulator->screen, b1, b2, b3);
+      break;
+    case 34:
+      printf("FX65 ");
+      opcode_FX65(emulator, &emulator->screen, b1, b2, b3);
       break;
     default:
       printf("Unknown OPCODE ");
