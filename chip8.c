@@ -105,7 +105,7 @@ void emulate(emulator *emulator)
 //fetch opcode from the memory
 Uint16 get_opcode(cpu *cpu)
 {
-  return((Uint16)cpu->memory[cpu->pc] << 8 | (Uint16)cpu->memory[cpu->pc + 1]);
+  return((cpu->memory[cpu->pc] << 8) | cpu->memory[cpu->pc + 1]);
 }
 
 Uint8 get_action(struct s_jump *table, Uint16 opcode)

@@ -35,7 +35,7 @@ void opcode_2NNN(emulator *emulator, screen *screen, Uint8 b1, Uint8 b2, Uint8 b
   if (cpu->jump_nb < 15)
     cpu->jump_nb++;
 
-  cpu->pc = (b3 << 8) + (b2 << 4) + b1 - 2;
+  cpu->pc = ((b3 << 8) + (b2 << 4) + b1) - 2;
 }
 
 //The interpreter compares register Vx to nn, and if they are equal, increments the program counter by 2.
@@ -100,42 +100,54 @@ void opcode_8XY3(emulator *emulator, screen *screen, Uint8 b1, Uint8 b2, Uint8 b
 //Set Vx = Vx + Vy, set VF = carry.
 void opcode_8XY4(emulator *emulator, screen *screen, Uint8 b1, Uint8 b2, Uint8 b3)
 {
-  emulator->cpu.V[0xF] = emulator->cpu.V[b2] > 0xFF - emulator->cpu.V[b3];
+  int tb3,tb2;
+  tb3 = emulator->cpu.V[b3];
+  tb2 = emulator->cpu.V[b2];
+
   emulator->cpu.V[b3] += emulator->cpu.V[b2];
+  if (tb2 > 0xFF - tb3)
+    emulator->cpu.V[0xF] = 1;
+  else
+    emulator->cpu.V[0xF] = 0;
 }
 
 //Set Vx = Vx - Vy, set VF = NOT borrow.
 void opcode_8XY5(emulator *emulator, screen *screen, Uint8 b1, Uint8 b2, Uint8 b3)
 {
-  emulator->cpu.V[0xF] = emulator->cpu.V[b2] <= emulator->cpu.V[b3];
+  int tb3,tb2;
+  tb3 = emulator->cpu.V[b3];
+  tb2 = emulator->cpu.V[b2];
   emulator->cpu.V[b3] = emulator->cpu.V[b3] - emulator->cpu.V[b2]; 
+  emulator->cpu.V[0xF] = tb2 <= tb3;
 }
 
 //Set Vx = Vx SHR 1. if lsb of Vx equal to 1 then VF is set to 1;
 void opcode_8XY6(emulator *emulator, screen *screen, Uint8 b1, Uint8 b2, Uint8 b3)
 {
-  if ((b3 & 0b00000001) == 0b00000001)
+  int tb3 = emulator->cpu.V[b3];
+  emulator->cpu.V[b3] = emulator->cpu.V[b3] >> 1;
+  if ((tb3 & 0b00000001) == 0b00000001)
     emulator->cpu.V[0xF] = 1;
   else
     emulator->cpu.V[0xF] = 0;
-  emulator->cpu.V[b3] = emulator->cpu.V[b3] >> 1;
 }
 
 //Set Vx = Vy - Vx, set VF = NOT borrow.
 void opcode_8XY7(emulator *emulator, screen *screen, Uint8 b1, Uint8 b2, Uint8 b3)
 {
-  emulator->cpu.V[0xF] = emulator->cpu.V[b3] <= emulator->cpu.V[b2];
   emulator->cpu.V[b3] = emulator->cpu.V[b2] - emulator->cpu.V[b3]; 
+  emulator->cpu.V[0xF] = emulator->cpu.V[b3] <= emulator->cpu.V[b2];
 }
 
 //Set Vx = Vx SHL 1. if msb of Vx equal to 1 then VF is set to 1;
 void opcode_8XYE(emulator *emulator, screen *screen, Uint8 b1, Uint8 b2, Uint8 b3)
 {
-  if ((b3 & 0b10000000) == 0b10000000)
+  int tb3 = emulator->cpu.V[b3];
+  emulator->cpu.V[b3] = emulator->cpu.V[b3] << 1;
+  if ((tb3 & 0b10000000) == 0b10000000)
     emulator->cpu.V[0xF] = 1;
   else
     emulator->cpu.V[0xF] = 0;
-  emulator->cpu.V[b3] = emulator->cpu.V[b3] << 1;
 }
 
 //Skip next instruction if Vx != Vy.
@@ -258,133 +270,134 @@ void interpret(emulator *emulator)
   switch(action)
   {
     case 0:
-      printf("0NNN ");
+      printf("0NNN(%X) ",opcode);
       break;
     case 1:
-      printf("00E0 ");
+      printf("00E0(%X) ",opcode);
       opcode_00E0(emulator, &emulator->screen, b1, b2, b3);
       break;
     case 2:
-      printf("00EE ");
+      printf("00EE(%X) ",opcode);
       opcode_00EE(emulator, &emulator->screen, b1, b2, b3);
       break;
     case 3:
-      printf("1NNN ");
+      printf("1NNN(%X) ",opcode);
       opcode_1NNN(emulator,&emulator->screen, b1,b2,b3);
       break;
     case 4:
-      printf("2NNN ");
+      printf("2NNN(%X) ",opcode);
       opcode_2NNN(emulator, &emulator->screen, b1, b2, b3);
       break;
     case 5:
-      printf("3XNN ");
+      printf("3XNN(%X) ",opcode);
       opcode_3XNN(emulator, &emulator->screen, b1, b2, b3);
       break;
     case 6:
-      printf("4XNN ");
+      printf("4XNN(%X) ",opcode);
       opcode_4XNN(emulator, &emulator->screen, b1, b2, b3);
+      break;
     case 7:
-      printf("5XY0 ");
+      printf("5XY0(%X) ",opcode);
       opcode_5XY0(emulator, &emulator->screen, b1, b2, b3);
       break;
     case 8:
-      printf("6XNN ");
+      printf("6XNN(%X) ",opcode);
       opcode_6XNN(emulator, &emulator->screen, b1, b2, b3);
       break;
     case 9:
-      printf("7XNN ");
+      printf("7XNN(%X) ",opcode);
       opcode_7XNN(emulator, &emulator->screen, b1, b2, b3);
       break;
     case 10:
-      printf("8XY0 ");
+      printf("8XY0(%X) ",opcode);
       opcode_8XY0(emulator, &emulator->screen, b1, b2, b3);
       break;
     case 11:
-      printf("8XY1 ");
+      printf("8XY1(%X) ",opcode);
       opcode_8XY1(emulator, &emulator->screen, b1, b2, b3);
       break;
     case 12:
-      printf("8XY2 ");
+      printf("8XY2(%X) ",opcode);
       opcode_8XY2(emulator, &emulator->screen, b1, b2, b3);
       break;
     case 13:
-      printf("8XY3 ");
+      printf("8XY3(%X) ",opcode);
       opcode_8XY3(emulator, &emulator->screen, b1, b2, b3);
       break;
     case 14:
-      printf("8XY4 ");
+      printf("8XY4(%X) ",opcode);
       opcode_8XY4(emulator, &emulator->screen, b1, b2, b3);
       break;
     case 15:
-      printf("8XY5 ");
+      printf("8XY5(%X) ",opcode);
       opcode_8XY5(emulator, &emulator->screen, b1, b2, b3);
       break;
     case 16:
-      printf("8XY6 ");
+      printf("8XY6(%X) ",opcode);
       opcode_8XY6(emulator, &emulator->screen, b1, b2, b3);
       break;
     case 17:
-      printf("8XY7 ");
+      printf("8XY7(%X) ",opcode);
       opcode_8XY7(emulator, &emulator->screen, b1, b2, b3);
       break;
     case 18:
-      printf("8XYE ");
+      printf("8XYE(%X) ",opcode);
       opcode_8XYE(emulator, &emulator->screen, b1, b2, b3);
       break;
     case 19:
-      printf("9XY0 ");
+      printf("9XY0(%X) ",opcode);
       opcode_9XY0(emulator, &emulator->screen, b1, b2, b3);
       break;
     case 20:
-      printf("ANNN ");
+      printf("ANNN(%X) ",opcode);
       opcode_ANNN(emulator, &emulator->screen, b1, b2, b3);
       break;
     case 21:
-      printf("BNNN ");
+      printf("BNNN(%X) ",opcode);
       opcode_BNNN(emulator, &emulator->screen, b1, b2, b3);
       break;
     case 22:
-      printf("CXNN ");
+      printf("CXNN(%X) ",opcode);
       opcode_CXNN(emulator, &emulator->screen, b1, b2, b3);
       break;
     case 23:
-      printf("DXYN ");
+      printf("DXYN(%X) ",opcode);
       opcode_DXYN(emulator, &emulator->screen, b1, b2, b3);
       break;
     case 26:
-      printf("FX07 ");
+      printf("FX07(%X) ",opcode);
       opcode_FX07(emulator, &emulator->screen, b1, b2, b3);
       break;
     case 28:
-      printf("FX15 ");
+      printf("FX15(%X) ",opcode);
       opcode_FX15(emulator, &emulator->screen, b1, b2, b3);
       break;
     case 29:
-      printf("FX18 ");
+      printf("FX18(%X) ",opcode);
       opcode_FX18(emulator, &emulator->screen, b1, b2, b3);
       break;
     case 30:
-      printf("FX1E ");
+      printf("FX1E(%X) ",opcode);
       opcode_FX1E(emulator, &emulator->screen, b1, b2, b3);
       break;
     case 31:
-      printf("FX29 ");
+      printf("FX29(%X) ",opcode);
       opcode_FX29(emulator, &emulator->screen, b1, b2, b3);
       break;
     case 32:
-      printf("FX33 ");
+      printf("FX33(%X) ",opcode);
       opcode_FX33(emulator, &emulator->screen, b1, b2, b3);
       break;
     case 33:
-      printf("FX55 ");
+      printf("FX55(%X) ",opcode);
       opcode_FX55(emulator, &emulator->screen, b1, b2, b3);
       break;
     case 34:
-      printf("FX65 ");
+      printf("FX65(%X) ",opcode);
       opcode_FX65(emulator, &emulator->screen, b1, b2, b3);
       break;
     default:
-      printf("Unknown OPCODE ");
+      printf("Unknown OPCODE(%X) ",opcode);
       break;
   } 
   emulator->cpu.pc += 2;
