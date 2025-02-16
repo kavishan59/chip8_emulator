@@ -187,20 +187,29 @@ void opcode_CXNN(emulator *emulator, screen *screen, Uint8 b1, Uint8 b2, Uint8 b
 void opcode_DXYN(emulator *emulator, screen *screen, Uint8 b1, Uint8 b2, Uint8 b3)
 {
   cpu *cpu = &emulator->cpu;
-
+  Uint8 Y = (cpu->V[b2]) % PIXEL_BY_HEIGHT;
+  Uint8 X = (cpu->V[b3]) % PIXEL_BY_WIDTH;
+  emulator->cpu.V[0xF] = 0;
+  
   for(size_t i = 0; i < b1; i++)
   {
     Uint8 sprite_byte = cpu->memory[cpu->I + i]; //sprite row of 8 bits
-    Uint8 y = (cpu->V[b2]) + i;
+    Uint8 y = Y + i;
+    
+    if (y >= PIXEL_BY_HEIGHT)
+      continue;
+
     for(size_t j =0; j < 8; j++)
     {
-      Uint8 x = (cpu->V[b3]) + j; 
-      if (y < PIXEL_BY_HEIGHT && x < PIXEL_BY_WIDTH && (sprite_byte << j) & 0b10000000) // get the MSB if j = 0 and so on
+      Uint8 x = X + j;
+      
+      if(x >= PIXEL_BY_WIDTH)
+        continue;
+
+      if ((sprite_byte << j) & 0b10000000) // get the MSB if j = 0 and so on
       { 
         if(screen->pixels[x][y] == WHITE)
           cpu->V[0xF] = 1;//collision detected !
-        else
-          cpu->V[0xF] = 0;
         screen->pixels[x][y] = !screen->pixels[x][y]; //toggle the pixel
       }
     }
