@@ -220,14 +220,16 @@ void opcode_DXYN(emulator *emulator, screen *screen, Uint8 b1, Uint8 b2, Uint8 b
 //Skip next instruction if key with the value of Vx is pressed.
 void opcode_EX9E(emulator *emulator, screen *screen, Uint8 b1, Uint8 b2, Uint8 b3)
 {
-  if(emulator->cpu.key[emulator->cpu.V[b3]])
+  Uint8 vx = emulator->cpu.V[b3] & 0x0F; //mask the higher 4 bits of vx
+  if(emulator->cpu.key[vx])
     emulator->cpu.pc += 2;
 }
 
 //Skip next instruction if key with the value of Vx is not pressed.
 void opcode_EXA1(emulator *emulator, screen *screen, Uint8 b1, Uint8 b2, Uint8 b3)
 {
-  if(!emulator->cpu.key[emulator->cpu.V[b3]])
+  Uint8 vx = emulator->cpu.V[b3] & 0x0F; //mask the higher 4 bits of vx
+  if(!emulator->cpu.key[vx])
     emulator->cpu.pc += 2;
 }
 
@@ -284,7 +286,8 @@ void opcode_FX1E(emulator *emulator, screen *screen, Uint8 b1, Uint8 b2, Uint8 b
 //Set I = location of sprite(font) for digit Vx. we stored from memory 0 to 80. Each font take 5 bytes
 void opcode_FX29(emulator *emulator, screen *screen, Uint8 b1, Uint8 b2, Uint8 b3)
 {
-  emulator->cpu.I = 5 * emulator->cpu.V[b3];
+  Uint8 vx = emulator->cpu.V[b3] & 0x0F; //mask the higher 4 bits of vx
+  emulator->cpu.I = 5 * vx;
 }
 
 //Store BCD representation of Vx in memory locations I, I+1, and I+2.
@@ -305,7 +308,7 @@ void opcode_FX55(emulator *emulator, screen *screen, Uint8 b1, Uint8 b2, Uint8 b
     emulator->cpu.memory[emulator->cpu.I + i] = emulator->cpu.V[i];
   }
   if (emulator->load_mode == 1)
-    emulator->cpu.I += 1; //memory quirks
+    emulator->cpu.I += b3 + 1; //memory quirks
 }
 
 //Read registers V0 through Vx from memory starting at location I.
@@ -316,7 +319,7 @@ void opcode_FX65(emulator *emulator, screen *screen, Uint8 b1, Uint8 b2, Uint8 b
     emulator->cpu.V[i] =emulator->cpu.memory[emulator->cpu.I + i];  
   }
   if (emulator->load_mode == 1)
-    emulator->cpu.I += 1; //memory quirks
+    emulator->cpu.I += b3 + 1; //memory quirks
 }
 //interpret opcodes
 void interpret(emulator *emulator)
